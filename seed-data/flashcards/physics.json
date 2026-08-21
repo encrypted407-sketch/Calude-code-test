@@ -1,0 +1,98 @@
+[
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Mechanics",
+    "category": "equation",
+    "front": "F = ma",
+    "back": "Newton's second law. F is the resultant force acting on an object in newtons, m is its mass in kilograms, a is its acceleration in metres per second squared. The acceleration always points in the same direction as the resultant force."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Mechanics",
+    "category": "equation",
+    "front": "v^2 = u^2 + 2as",
+    "back": "A constant-acceleration equation that doesn't involve time. u is initial velocity, v is final velocity, a is acceleration, s is displacement. Handy whenever a question gives you distances and speeds but not how long the motion took."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Energy",
+    "category": "equation",
+    "front": "E_k = \\frac{1}{2}mv^2",
+    "back": "Kinetic energy of a moving object. m is mass in kg, v is speed in m/s. Because speed is squared, doubling an object's speed quadruples its kinetic energy."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Energy",
+    "category": "equation",
+    "front": "\\Delta E_p = mg\\Delta h",
+    "back": "Change in gravitational potential energy near Earth's surface. m is mass, g is the gravitational field strength (about 9.81 N/kg), and delta-h is the change in height. Positive when the object rises, negative when it falls."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Electricity",
+    "category": "equation",
+    "front": "V = IR",
+    "back": "Ohm's law. V is potential difference across a component in volts, I is the current through it in amps, R is its resistance in ohms. Only strictly linear for an 'ohmic' conductor at constant temperature."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Electricity",
+    "category": "equation",
+    "front": "P = IV",
+    "back": "Electrical power delivered to or by a component. P is power in watts, I is current in amps, V is potential difference in volts. Combine with Ohm's law to get the equivalent forms P = I^2R and P = V^2/R."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Waves",
+    "category": "equation",
+    "front": "v = f\\lambda",
+    "back": "Wave speed equation. v is the speed the wave travels at, f is its frequency (waves passing a point per second), lambda is its wavelength (the distance between successive peaks). Holds for any wave — sound, light, water."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Particles",
+    "category": "equation",
+    "front": "E = hf",
+    "back": "Energy of a single photon. E is energy in joules, h is the Planck constant, f is the photon's frequency. Higher-frequency light (like UV) delivers more energetic photons than lower-frequency light (like red)."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Mechanics",
+    "category": "definition",
+    "front": "Terminal velocity",
+    "back": "The constant maximum speed a falling object reaches once air resistance has grown large enough to exactly balance its weight, so the resultant force — and therefore the acceleration — becomes zero."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Energy",
+    "category": "definition",
+    "front": "Conservation of energy",
+    "back": "Energy cannot be created or destroyed, only transferred from one store to another or dissipated (often as heat). In any closed system, the total energy at the end equals the total energy at the start."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Waves",
+    "category": "definition",
+    "front": "Diffraction",
+    "back": "The spreading out of a wave as it passes through a gap or around an obstacle. It's most noticeable when the gap is roughly the same size as the wavelength — a much wider gap barely diffracts the wave at all."
+  },
+  {
+    "subject": "Physics",
+    "examBoard": "AQA",
+    "topic": "Particles",
+    "category": "definition",
+    "front": "Wave-particle duality",
+    "back": "The idea that entities like light and electrons show both wave-like behaviour (e.g. diffraction, interference) and particle-like behaviour (e.g. arriving in discrete, localised packets), depending on the experiment used to observe them."
+  }
+]

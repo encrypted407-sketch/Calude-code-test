@@ -1,0 +1,98 @@
+[
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Algebra",
+    "category": "equation",
+    "front": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+    "back": "The quadratic formula: solves ax^2 + bx + c = 0 for x. a is the coefficient of x^2, b is the coefficient of x, c is the constant term. The part under the root, b^2-4ac, is the discriminant — it tells you how many real roots there are (two if positive, one if zero, none if negative)."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Differentiation",
+    "category": "equation",
+    "front": "\\frac{d}{dx}\\left[x^n\\right] = nx^{n-1}",
+    "back": "Power rule for differentiation: to differentiate x raised to a power n, bring the power down as a multiplier and reduce the power by one. Works for any real n, not just positive integers."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Trigonometry",
+    "category": "equation",
+    "front": "\\sin^2\\theta + \\cos^2\\theta = 1",
+    "back": "The Pythagorean identity, true for every angle theta. Comes straight from Pythagoras' theorem applied to a point on the unit circle: the horizontal coordinate is cos(theta), the vertical is sin(theta), and the radius is 1."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Sequences and series",
+    "category": "equation",
+    "front": "S_n = \\frac{n}{2}\\left(2a + (n-1)d\\right)",
+    "back": "Sum of the first n terms of an arithmetic series. a is the first term, d is the common difference between consecutive terms, n is how many terms you're adding up."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Vectors",
+    "category": "equation",
+    "front": "|\\mathbf{a}| = \\sqrt{x^2 + y^2 + z^2}",
+    "back": "Magnitude (length) of a 3D vector a = (x, y, z). It's Pythagoras' theorem extended into three dimensions — square each component, add them, then square-root the total."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Statistics",
+    "category": "equation",
+    "front": "P(A \\cap B) = P(A)P(B|A)",
+    "back": "The general multiplication rule for two events A and B. P(A) is the chance A happens, and P(B|A) is the chance B happens given that A has already happened. If A and B are independent, P(B|A) is just P(B), giving the simpler P(A)P(B)."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Mechanics",
+    "category": "equation",
+    "front": "s = ut + \\frac{1}{2}at^2",
+    "back": "One of the constant-acceleration ('suvat') equations. s is displacement, u is initial velocity, a is acceleration, t is time. Use it whenever an object speeds up or slows down at a steady rate and you know the starting speed."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Algebra",
+    "category": "definition",
+    "front": "Discriminant",
+    "back": "The expression b^2 - 4ac from the quadratic formula. Its sign alone tells you how many real solutions a quadratic equation has, without needing to solve it: positive means two, zero means exactly one (a repeated root), negative means none."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Differentiation",
+    "category": "definition",
+    "front": "Stationary point",
+    "back": "A point on a curve where the gradient is momentarily zero — the tangent line is flat. It could be a local maximum, a local minimum, or a point of inflection; you check which by looking at how the gradient behaves just either side of it."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Sequences and series",
+    "category": "definition",
+    "front": "Geometric sequence",
+    "back": "A sequence where you get the next term by multiplying the previous one by a fixed number, the common ratio. Contrast with an arithmetic sequence, where you add a fixed amount instead."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Statistics",
+    "category": "definition",
+    "front": "Independent events",
+    "back": "Two events where the outcome of one has no effect on the probability of the other. Rolling a die and flipping a coin are independent; drawing two cards from a deck without replacement are not, because the first draw changes what's left for the second."
+  },
+  {
+    "subject": "Mathematics",
+    "examBoard": "AQA",
+    "topic": "Mechanics",
+    "category": "definition",
+    "front": "Resultant force",
+    "back": "The single overall force you'd get by combining every force acting on an object. If the resultant is zero, the object's velocity doesn't change; if it's non-zero, the object accelerates in the direction of that resultant, per Newton's second law."
+  }
+]
