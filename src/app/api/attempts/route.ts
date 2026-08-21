@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { markAnswer } from "@/lib/ai";
 import { computeXp, touchStreak, levelForXp } from "@/lib/gamification";
 import { updateTopicMastery } from "@/lib/mastery";
+import { nextReviewInterval } from "@/lib/requiz";
 
 const attemptSchema = z
   .object({
@@ -102,6 +103,18 @@ export async function POST(req: Request) {
       marksAwarded: marking.marksAwarded,
       marksAvailable: question.marksAvailable,
     });
+  }
+
+  if (question.isGenerated) {
+    const schedule = await prisma.reviewSchedule.findUnique({ where: { questionId: question.id } });
+    if (schedule) {
+      const scorePct = question.marksAvailable > 0 ? marking.marksAwarded / question.marksAvailable : 0;
+      const { intervalDays, dueDate } = nextReviewInterval(schedule.intervalDays, scorePct);
+      await prisma.reviewSchedule.update({
+        where: { id: schedule.id },
+        data: { intervalDays, dueDate, timesReviewed: { increment: 1 } },
+      });
+    }
   }
 
   const updatedUser = await prisma.user.findUniqueOrThrow({

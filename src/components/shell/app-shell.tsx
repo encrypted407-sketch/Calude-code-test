@@ -12,6 +12,7 @@ import {
   LogOut,
   Flame,
   Sparkles,
+  RotateCcw,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/papers", label: "Papers", icon: FileText },
+  { href: "/revise", label: "Revise", icon: RotateCcw },
   { href: "/flashcards", label: "Flashcards", icon: Layers },
   { href: "/mock", label: "Mock Exams", icon: Timer },
   { href: "/checklist", label: "Checklist", icon: ListChecks },

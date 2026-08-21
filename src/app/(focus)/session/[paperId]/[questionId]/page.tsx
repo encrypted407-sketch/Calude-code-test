@@ -24,8 +24,11 @@ export default async function SessionPage({
   });
   if (!paper) notFound();
 
-  const questionIndex = paper.questions.findIndex((q) => q.id === questionId);
-  const question = paper.questions[questionIndex];
+  const question =
+    paper.questions.find((q) => q.id === questionId) ??
+    (await prisma.question.findFirst({
+      where: { id: questionId, paperId: paper.id, isGenerated: true },
+    }));
   if (!question) notFound();
 
   const attempts = await prisma.attempt.findMany({
@@ -33,10 +36,16 @@ export default async function SessionPage({
     orderBy: { attemptNumber: "asc" },
   });
 
-  const nextQuestion = paper.questions[questionIndex + 1] ?? null;
+  const questionIndex = paper.questions.findIndex((q) => q.id === questionId);
+  const isGenerated = questionIndex === -1;
+  const nextQuestion = isGenerated ? null : paper.questions[questionIndex + 1] ?? null;
 
   return (
-    <FocusShell current={questionIndex + 1} total={paper.questions.length} exitHref={`/papers/${paper.id}`}>
+    <FocusShell
+      current={isGenerated ? undefined : questionIndex + 1}
+      total={isGenerated ? undefined : paper.questions.length}
+      exitHref={isGenerated ? "/revise" : `/papers/${paper.id}`}
+    >
       <QuestionSession
         paperId={paper.id}
         question={{
@@ -59,6 +68,7 @@ export default async function SessionPage({
           studentAnswerImageUrl: a.studentAnswerImageUrl,
         }))}
         nextQuestionId={nextQuestion?.id ?? null}
+        finishHref={isGenerated ? "/revise" : `/papers/${paper.id}`}
       />
     </FocusShell>
   );

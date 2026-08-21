@@ -37,11 +37,13 @@ export function QuestionSession({
   question,
   initialAttempts,
   nextQuestionId,
+  finishHref,
 }: {
   paperId: string;
   question: QuestionView;
   initialAttempts: AttemptView[];
   nextQuestionId: string | null;
+  finishHref?: string;
 }) {
   const router = useRouter();
   const canvasRef = useRef<DrawingCanvasHandle>(null);
@@ -121,7 +123,7 @@ export function QuestionSession({
     if (nextQuestionId) {
       router.push(`/session/${paperId}/${nextQuestionId}`);
     } else {
-      router.push(`/papers/${paperId}`);
+      router.push(finishHref ?? `/papers/${paperId}`);
     }
   }
 
