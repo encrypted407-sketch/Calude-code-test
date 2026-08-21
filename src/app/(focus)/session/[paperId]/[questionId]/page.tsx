@@ -48,6 +48,7 @@ export default async function SessionPage({
     >
       <QuestionSession
         paperId={paper.id}
+        subject={paper.subject}
         question={{
           id: question.id,
           number: question.number,

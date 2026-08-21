@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Flame, Sparkles, Layers, TrendingUp } from "lucide-react";
+import { Flame, Sparkles, Layers, TrendingUp, Download } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { levelForXp } from "@/lib/gamification";
@@ -45,7 +45,16 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Welcome back{user.name ? `, ${user.name}` : ""}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Welcome back{user.name ? `, ${user.name}` : ""}</h1>
+        <a
+          href="/api/export"
+          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          <Download className="h-4 w-4" />
+          Export progress
+        </a>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>

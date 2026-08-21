@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { PwaRegister } from "@/components/pwa-register";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -19,6 +20,10 @@ export const metadata: Metadata = {
   description:
     "Answer real past-paper questions, get AI marking against the mark scheme, and revise smarter with spaced repetition.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
@@ -37,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Providers>{children}</Providers>
+        <PwaRegister />
       </body>
     </html>
   );

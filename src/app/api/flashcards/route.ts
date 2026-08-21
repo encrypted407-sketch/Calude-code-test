@@ -12,14 +12,21 @@ const createSchema = z.object({
   back: z.string().min(1),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const subject = new URL(req.url).searchParams.get("subject");
+  const category = new URL(req.url).searchParams.get("category");
+
   const cards = await prisma.flashcard.findMany({
-    where: { OR: [{ isPreloaded: true }, { createdById: session.user.id }] },
+    where: {
+      OR: [{ isPreloaded: true }, { createdById: session.user.id }],
+      ...(subject ? { subject } : {}),
+      ...(category ? { category } : {}),
+    },
     orderBy: [{ subject: "asc" }, { topic: "asc" }],
   });
 

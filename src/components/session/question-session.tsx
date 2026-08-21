@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { MathText } from "@/components/ui/math-text";
 import { DrawingCanvas, type DrawingCanvasHandle } from "@/components/canvas/drawing-canvas";
+import { FormulaSheetToggle } from "@/components/session/formula-sheet";
 import { cn } from "@/lib/utils";
 
 interface AttemptView {
@@ -34,12 +35,14 @@ interface QuestionView {
 
 export function QuestionSession({
   paperId,
+  subject,
   question,
   initialAttempts,
   nextQuestionId,
   finishHref,
 }: {
   paperId: string;
+  subject: string;
   question: QuestionView;
   initialAttempts: AttemptView[];
   nextQuestionId: string | null;
@@ -130,11 +133,14 @@ export function QuestionSession({
   return (
     <div className="flex flex-col gap-6 py-6">
       <div>
-        <p className="text-sm font-medium text-muted-foreground">
-          Question {question.number}
-          {question.topic ? ` · ${question.topic}` : ""} · {question.marksAvailable} mark
-          {question.marksAvailable === 1 ? "" : "s"}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium text-muted-foreground">
+            Question {question.number}
+            {question.topic ? ` · ${question.topic}` : ""} · {question.marksAvailable} mark
+            {question.marksAvailable === 1 ? "" : "s"}
+          </p>
+          <FormulaSheetToggle subject={subject} />
+        </div>
         <div className="mt-2 text-lg leading-relaxed">
           <MathText text={question.text} />
         </div>

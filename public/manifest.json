@@ -1,0 +1,23 @@
+{
+  "name": "Ascend — A-Level Revision",
+  "short_name": "Ascend",
+  "description": "Answer past-paper questions, get AI marking against the real mark scheme, and revise smarter with spaced repetition.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f7f8fb",
+  "theme_color": "#4f6df5",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
