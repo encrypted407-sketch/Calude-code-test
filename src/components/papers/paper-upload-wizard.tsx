@@ -126,7 +126,15 @@ export function PaperUploadWizard() {
           year: year ? Number(year) : null,
           rawText: rawPaperText,
           markSchemeRawText: rawMarkSchemeText || null,
-          questions: questions.map(({ _key, ...q }) => q),
+          questions: questions.map((q) => ({
+            number: q.number,
+            text: q.text,
+            marksAvailable: q.marksAvailable,
+            topic: q.topic,
+            yearRequired: q.yearRequired,
+            requiresDrawing: q.requiresDrawing,
+            markSchemeText: q.markSchemeText,
+          })),
         }),
       });
       const data = await res.json();
