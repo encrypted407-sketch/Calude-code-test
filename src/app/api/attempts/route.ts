@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { markAnswer } from "@/lib/ai";
-import { computeXp, touchStreak, levelForXp } from "@/lib/gamification";
-import { updateTopicMastery } from "@/lib/mastery";
-import { nextReviewInterval } from "@/lib/requiz";
+import { markAndRecordAttempt } from "@/lib/attempts";
+import { levelForXp } from "@/lib/gamification";
 
 const attemptSchema = z
   .object({
@@ -36,85 +34,19 @@ export async function POST(req: Request) {
   if (!question) {
     return NextResponse.json({ error: "Question not found." }, { status: 404 });
   }
-  if (!question.markSchemeText) {
-    return NextResponse.json(
-      { error: "This question has no mark scheme, so it can't be marked yet." },
-      { status: 422 }
-    );
-  }
 
-  const previousAttempts = await prisma.attempt.findMany({
-    where: { userId: session.user.id, questionId: question.id },
-    orderBy: { attemptNumber: "desc" },
-  });
-  const previous = previousAttempts[0];
-
-  let marking;
+  let result;
   try {
-    marking = await markAnswer({
-      questionText: question.text,
-      markSchemeText: question.markSchemeText,
-      marksAvailable: question.marksAvailable,
+    result = await markAndRecordAttempt({
+      userId: session.user.id,
+      question,
       studentAnswerText: parsed.data.studentAnswerText,
       studentAnswerImageBase64: parsed.data.studentAnswerImageBase64,
-      previousFeedback: previous?.feedback ?? null,
     });
   } catch (err) {
     console.error("Marking failed:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: `Couldn't mark this answer: ${message}` }, { status: 502 });
-  }
-
-  const xpEarned = computeXp({
-    marksAwarded: marking.marksAwarded,
-    marksAvailable: question.marksAvailable,
-    previousMarksAwarded: previous?.marksAwarded ?? null,
-  });
-
-  const attempt = await prisma.attempt.create({
-    data: {
-      userId: session.user.id,
-      questionId: question.id,
-      attemptNumber: previousAttempts.length + 1,
-      studentAnswerText: parsed.data.studentAnswerText ?? null,
-      studentAnswerImageUrl: parsed.data.studentAnswerImageBase64
-        ? `data:image/png;base64,${parsed.data.studentAnswerImageBase64}`
-        : null,
-      marksAwarded: marking.marksAwarded,
-      marksAvailable: question.marksAvailable,
-      feedback: marking.feedback,
-      improvementPoints: marking.improvementPoints,
-      xpEarned,
-    },
-  });
-
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { xp: { increment: xpEarned } },
-  });
-  const newStreak = await touchStreak(session.user.id);
-
-  if (question.topic) {
-    await updateTopicMastery({
-      userId: session.user.id,
-      subject: question.paper.subject,
-      topic: question.topic,
-      yearRequired: question.yearRequired,
-      marksAwarded: marking.marksAwarded,
-      marksAvailable: question.marksAvailable,
-    });
-  }
-
-  if (question.isGenerated) {
-    const schedule = await prisma.reviewSchedule.findUnique({ where: { questionId: question.id } });
-    if (schedule) {
-      const scorePct = question.marksAvailable > 0 ? marking.marksAwarded / question.marksAvailable : 0;
-      const { intervalDays, dueDate } = nextReviewInterval(schedule.intervalDays, scorePct);
-      await prisma.reviewSchedule.update({
-        where: { id: schedule.id },
-        data: { intervalDays, dueDate, timesReviewed: { increment: 1 } },
-      });
-    }
   }
 
   const updatedUser = await prisma.user.findUniqueOrThrow({
@@ -123,10 +55,10 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({
-    attempt,
-    previousAttempt: previous ?? null,
-    xpEarned,
-    streakCount: newStreak,
+    attempt: result.attempt,
+    previousAttempt: result.previousAttempt,
+    xpEarned: result.xpEarned,
+    streakCount: result.streakCount,
     totalXp: updatedUser.xp,
     level: levelForXp(updatedUser.xp),
   });
