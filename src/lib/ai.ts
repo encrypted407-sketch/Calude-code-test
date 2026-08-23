@@ -31,6 +31,10 @@ type UserContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
 
+/** A rate/size limit response — retrying immediately would just spend more of the same
+ * exhausted budget, so this is never retried (unlike malformed-JSON/schema failures). */
+class RateLimitError extends Error {}
+
 async function callGroqJSON<T>(opts: {
   system: string;
   userContent: string | UserContentPart[];
@@ -68,7 +72,7 @@ async function callGroqJSON<T>(opts: {
     if (!res.ok) {
       const errBody = await res.text().catch(() => "");
       if (res.status === 413 || res.status === 429) {
-        throw new Error(
+        throw new RateLimitError(
           "Groq's free-tier rate limit was hit for this request. Wait a minute and try again, " +
             "or try a shorter paper/answer — free-tier accounts have a per-minute token cap."
         );
@@ -109,7 +113,8 @@ async function callGroqJSON<T>(opts: {
 
   try {
     return await attempt();
-  } catch {
+  } catch (err) {
+    if (err instanceof RateLimitError) throw err;
     // Retry once, telling the model exactly what went wrong.
     return await attempt(
       "Your previous response was not valid JSON matching the required schema. " +
@@ -227,6 +232,10 @@ No prose outside the JSON, no markdown fences.`;
     userContent,
     schema: markingResultSchema,
     model: input.studentAnswerImageBase64 ? VISION_MODEL : TEXT_MODEL,
+    // A marking JSON object (an int plus two short paragraphs) never needs much room —
+    // kept tight because an image already costs several thousand tokens of Groq's
+    // free-tier per-minute budget on its own (measured ~2800+ tokens for a tiny image).
+    maxTokens: 1200,
   });
 }
 
@@ -266,5 +275,6 @@ No prose, no markdown fences.`;
     system,
     userContent: userText,
     schema: rewriteSchema,
+    maxTokens: 1800,
   });
 }
