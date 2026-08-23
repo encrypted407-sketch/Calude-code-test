@@ -5,8 +5,8 @@ import { z } from "zod";
 // text-only marking) use GROQ_MODEL; marking with a drawn/handwritten image needs a
 // vision-capable model, so those calls use GROQ_VISION_MODEL instead.
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const TEXT_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
-const VISION_MODEL = process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct";
+const TEXT_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+const VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
 
 function getApiKey() {
   const key = process.env.GROQ_API_KEY;
@@ -67,6 +67,12 @@ async function callGroqJSON<T>(opts: {
 
     if (!res.ok) {
       const errBody = await res.text().catch(() => "");
+      if (res.status === 413 || res.status === 429) {
+        throw new Error(
+          "Groq's free-tier rate limit was hit for this request. Wait a minute and try again, " +
+            "or try a shorter paper/answer — free-tier accounts have a per-minute token cap."
+        );
+      }
       throw new Error(`Groq API error (${res.status}): ${errBody || res.statusText}`);
     }
 
@@ -157,7 +163,9 @@ No prose, no markdown fences — the raw JSON object only.`;
     system,
     userContent: userText,
     schema: parsedPaperSchema,
-    maxTokens: 8192,
+    // Kept well under Groq's free-tier per-request token cap (input + this reservation
+    // must clear it) — see the README's note on free-tier limits for larger papers.
+    maxTokens: 3500,
   });
 }
 

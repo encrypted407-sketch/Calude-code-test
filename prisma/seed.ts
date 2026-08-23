@@ -78,6 +78,7 @@ async function seedPapers(systemUserId: string) {
     .filter((f) => fs.statSync(path.join(dir, f)).isDirectory());
 
   let created = 0;
+  let isFirst = true;
   const failed: string[] = [];
 
   for (const subjectDir of subjectDirs) {
@@ -85,6 +86,11 @@ async function seedPapers(systemUserId: string) {
     const files = fs.readdirSync(subjectPath).filter((f) => f.endsWith(".json"));
 
     for (const file of files) {
+      // Free-tier AI providers commonly cap tokens-per-minute; spacing calls out
+      // avoids tripping that on a multi-paper seed run.
+      if (!isFirst) await new Promise((resolve) => setTimeout(resolve, 20_000));
+      isFirst = false;
+
       const manifest: PaperManifest = JSON.parse(
         fs.readFileSync(path.join(subjectPath, file), "utf-8")
       );

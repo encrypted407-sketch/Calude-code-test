@@ -14,11 +14,18 @@ general — any subject or exam board can be added via upload.
 - PostgreSQL + Prisma ORM (SQLite for local dev)
 - NextAuth.js (credentials provider)
 - Groq API (OpenAI-compatible REST, no SDK) for paper parsing, marking, and
-  question rewriting — free API key, no card required. Text calls use a
-  Llama text model; marking a drawn/handwritten answer (image input) uses
-  a vision-capable Llama model instead. See
+  question rewriting — free API key, no card required. Text calls use
+  `openai/gpt-oss-120b`; marking a drawn/handwritten answer (image input)
+  uses the multimodal `qwen/qwen3.6-27b` instead, since not all Groq-hosted
+  models take images. Verified working end-to-end against a real free-tier
+  key. Free-tier accounts have a per-minute token cap (observed ~8000 TPM) —
+  large paper uploads or rapid back-to-back requests can hit it; the app
+  surfaces a clear "wait a minute and try again" error rather than a raw
+  API error when that happens. See
   [console.groq.com/docs/rate-limits](https://console.groq.com/docs/rate-limits)
-  for current free-tier limits
+  for current limits, and [console.groq.com/docs/models](https://console.groq.com/docs/models)
+  if a model here has since been retired — Groq's free-tier catalog changes
+  over time, override with `GROQ_MODEL`/`GROQ_VISION_MODEL` if so
 - Tailwind CSS + Framer Motion
 - HTML5 Canvas (Pointer Events + `perfect-freehand`) for drawn answers
 - KaTeX for equation rendering
@@ -47,8 +54,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | `NEXTAUTH_SECRET` | Random secret used to sign session tokens |
 | `NEXTAUTH_URL` | Base URL of the app (`http://localhost:3000` locally) |
 | `GROQ_API_KEY` | Required for paper parsing, marking, and question rewriting — free at [console.groq.com/keys](https://console.groq.com/keys), no card required |
-| `GROQ_MODEL` | Optional, text model, defaults to `llama-3.3-70b-versatile` |
-| `GROQ_VISION_MODEL` | Optional, used only when marking a drawn/handwritten answer, defaults to `meta-llama/llama-4-scout-17b-16e-instruct` |
+| `GROQ_MODEL` | Optional, text model, defaults to `openai/gpt-oss-120b` |
+| `GROQ_VISION_MODEL` | Optional, used only when marking a drawn/handwritten answer, defaults to `qwen/qwen3.6-27b` |
 
 ## Project structure
 
