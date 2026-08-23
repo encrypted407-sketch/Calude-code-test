@@ -11,3 +11,10 @@ export function levelForXp(xp: number): { level: number; xpIntoLevel: number; xp
   }
   return { level, xpIntoLevel: remaining, xpForNextLevel: threshold };
 }
+
+/** Returns the new level if xp crossing xpBefore -> xpAfter increased it, else null. */
+export function didLevelUp(xpBefore: number, xpAfter: number): number | null {
+  const before = levelForXp(xpBefore).level;
+  const after = levelForXp(xpAfter).level;
+  return after > before ? after : null;
+}

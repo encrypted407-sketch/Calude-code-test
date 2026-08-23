@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp } from "lucide-react";
 
@@ -12,11 +12,18 @@ export function LevelUpCelebration({
   level: number | null;
   onDone: () => void;
 }) {
+  // Keep the latest onDone in a ref so a parent re-render (a fresh inline
+  // callback each time) can't tear down and restart this timer.
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
+
   useEffect(() => {
     if (level == null) return;
-    const timer = setTimeout(onDone, 2400);
+    const timer = setTimeout(() => onDoneRef.current(), 2400);
     return () => clearTimeout(timer);
-  }, [level, onDone]);
+  }, [level]);
 
   return (
     <AnimatePresence>

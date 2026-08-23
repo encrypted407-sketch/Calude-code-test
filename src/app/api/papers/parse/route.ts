@@ -29,14 +29,30 @@ export async function POST(req: Request) {
 
   let paperText = typeof paperTextField === "string" ? paperTextField.trim() : "";
   if (!paperText && paperFile instanceof File && paperFile.size > 0) {
-    const buffer = Buffer.from(await paperFile.arrayBuffer());
-    paperText = await extractPdfText(buffer);
+    try {
+      const buffer = Buffer.from(await paperFile.arrayBuffer());
+      paperText = await extractPdfText(buffer);
+    } catch (err) {
+      console.error("Question paper PDF extraction failed:", err);
+      return NextResponse.json(
+        { error: "Couldn't read that PDF. Try a different file, or paste the text instead." },
+        { status: 400 }
+      );
+    }
   }
 
   let markSchemeText = typeof markSchemeTextField === "string" ? markSchemeTextField.trim() : "";
   if (!markSchemeText && markSchemeFile instanceof File && markSchemeFile.size > 0) {
-    const buffer = Buffer.from(await markSchemeFile.arrayBuffer());
-    markSchemeText = await extractPdfText(buffer);
+    try {
+      const buffer = Buffer.from(await markSchemeFile.arrayBuffer());
+      markSchemeText = await extractPdfText(buffer);
+    } catch (err) {
+      console.error("Mark scheme PDF extraction failed:", err);
+      return NextResponse.json(
+        { error: "Couldn't read that mark scheme PDF. Try a different file, or paste the text instead." },
+        { status: 400 }
+      );
+    }
   }
 
   if (!paperText) {

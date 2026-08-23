@@ -11,7 +11,6 @@ import { MathText } from "@/components/ui/math-text";
 import { DrawingCanvas, type DrawingCanvasHandle } from "@/components/canvas/drawing-canvas";
 import { FormulaSheetToggle } from "@/components/session/formula-sheet";
 import { LevelUpCelebration } from "@/components/ui/level-up-celebration";
-import { levelForXp } from "@/lib/leveling";
 import { cn } from "@/lib/utils";
 
 interface AttemptView {
@@ -110,9 +109,7 @@ export function QuestionSession({
         },
       ]);
       setLastXp(data.xpEarned);
-      const previousLevel = levelForXp(data.totalXp - data.xpEarned).level;
-      const newLevel = levelForXp(data.totalXp).level;
-      if (newLevel > previousLevel) setLevelUpTo(newLevel);
+      if (data.leveledUpTo) setLevelUpTo(data.leveledUpTo);
       setMode("result");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");

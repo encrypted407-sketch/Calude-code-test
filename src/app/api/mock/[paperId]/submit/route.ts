@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { markAndRecordAttempt } from "@/lib/attempts";
+import { didLevelUp } from "@/lib/leveling";
 
 const submitSchema = z.object({
   answers: z.array(
@@ -34,6 +35,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ paperId
   if (!paper) {
     return NextResponse.json({ error: "Paper not found." }, { status: 404 });
   }
+
+  const userBefore = await prisma.user.findUniqueOrThrow({
+    where: { id: session.user.id },
+    select: { xp: true },
+  });
 
   const answersByQuestion = new Map(parsed.data.answers.map((a) => [a.questionId, a]));
 
@@ -96,7 +102,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ paperId
   const totalAwarded = results.reduce((s, r) => s + r.marksAwarded, 0);
   const totalAvailable = results.reduce((s, r) => s + r.marksAvailable, 0);
 
-  const user = await prisma.user.findUniqueOrThrow({
+  const userAfter = await prisma.user.findUniqueOrThrow({
     where: { id: session.user.id },
     select: { xp: true },
   });
@@ -106,6 +112,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ paperId
     totalAwarded,
     totalAvailable,
     totalXp,
-    userTotalXp: user.xp,
+    leveledUpTo: didLevelUp(userBefore.xp, userAfter.xp),
   });
 }

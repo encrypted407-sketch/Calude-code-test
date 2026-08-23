@@ -21,6 +21,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
+  const flashcard = await prisma.flashcard.findUnique({
+    where: { id: parsed.data.flashcardId },
+    select: { isPreloaded: true, createdById: true },
+  });
+  if (!flashcard || (flashcard.createdById !== session.user.id && !flashcard.isPreloaded)) {
+    return NextResponse.json({ error: "Flashcard not found." }, { status: 404 });
+  }
+
   const existing = await prisma.flashcardProgress.findUnique({
     where: {
       userId_flashcardId: { userId: session.user.id, flashcardId: parsed.data.flashcardId },

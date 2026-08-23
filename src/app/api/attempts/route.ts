@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { markAndRecordAttempt } from "@/lib/attempts";
-import { levelForXp } from "@/lib/gamification";
+import { levelForXp, didLevelUp } from "@/lib/leveling";
 
 const attemptSchema = z
   .object({
@@ -31,9 +31,14 @@ export async function POST(req: Request) {
     where: { id: parsed.data.questionId },
     include: { paper: true },
   });
-  if (!question) {
+  if (!question || (question.paper.userId !== session.user.id && !question.paper.isPreloaded)) {
     return NextResponse.json({ error: "Question not found." }, { status: 404 });
   }
+
+  const userBefore = await prisma.user.findUniqueOrThrow({
+    where: { id: session.user.id },
+    select: { xp: true },
+  });
 
   let result;
   try {
@@ -61,5 +66,6 @@ export async function POST(req: Request) {
     streakCount: result.streakCount,
     totalXp: updatedUser.xp,
     level: levelForXp(updatedUser.xp),
+    leveledUpTo: didLevelUp(userBefore.xp, updatedUser.xp),
   });
 }

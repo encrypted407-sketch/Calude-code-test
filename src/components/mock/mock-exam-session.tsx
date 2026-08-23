@@ -20,7 +20,6 @@ import { MathText } from "@/components/ui/math-text";
 import { ProgressBar } from "@/components/ui/progress";
 import { DrawingCanvas, type DrawingCanvasHandle } from "@/components/canvas/drawing-canvas";
 import { LevelUpCelebration } from "@/components/ui/level-up-celebration";
-import { levelForXp } from "@/lib/leveling";
 import { cn } from "@/lib/utils";
 
 interface MockQuestion {
@@ -78,7 +77,6 @@ export function MockExamSession({
     totalAwarded: number;
     totalAvailable: number;
     totalXp: number;
-    userTotalXp: number;
   } | null>(null);
   const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
   const finishedRef = useRef(false);
@@ -118,9 +116,7 @@ export function MockExamSession({
           const data = await res.json();
           if (res.ok) {
             setResults(data);
-            const previousLevel = levelForXp(data.userTotalXp - data.totalXp).level;
-            const newLevel = levelForXp(data.userTotalXp).level;
-            if (newLevel > previousLevel) setLevelUpTo(newLevel);
+            if (data.leveledUpTo) setLevelUpTo(data.leveledUpTo);
             setPhase("results");
           }
         } finally {

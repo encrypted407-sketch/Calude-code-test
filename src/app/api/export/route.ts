@@ -2,7 +2,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 function csvEscape(value: string | number): string {
-  const str = String(value);
+  let str = String(value);
+  // Neutralize spreadsheet formula injection (paper titles/topics are free text —
+  // a leading =, +, -, @, tab, or CR would otherwise be interpreted as a formula
+  // by Excel/Sheets when this file is opened).
+  if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
   if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
   return str;
 }
