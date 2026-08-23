@@ -1,23 +1,24 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
+const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
-let client: Anthropic | null = null;
+let client: GoogleGenAI | null = null;
 
 function getClient() {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GEMINI_API_KEY) {
     throw new Error(
-      "ANTHROPIC_API_KEY is not set. Add it to your .env file to enable AI features."
+      "GEMINI_API_KEY is not set. Add it to your .env file to enable AI features " +
+        "(get a free key at https://aistudio.google.com/apikey)."
     );
   }
   if (!client) {
-    client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   }
   return client;
 }
 
-/** Strips ```json fences etc. some models wrap strict-JSON responses in. */
+/** Strips ```json fences etc., in case the model wraps its JSON output despite responseMimeType. */
 function extractJson(raw: string): string {
   const trimmed = raw.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -25,39 +26,35 @@ function extractJson(raw: string): string {
   return trimmed;
 }
 
-type ContentBlock =
-  | { type: "text"; text: string }
-  | {
-      type: "image";
-      source: { type: "base64"; media_type: "image/png" | "image/jpeg"; data: string };
-    };
+type ContentPart = { text: string } | { inlineData: { mimeType: "image/png"; data: string } };
 
-async function callClaudeJSON<T>(opts: {
+async function callGeminiJSON<T>(opts: {
   system: string;
-  content: ContentBlock[];
+  parts: ContentPart[];
   schema: z.ZodType<T>;
-  maxTokens?: number;
+  maxOutputTokens?: number;
 }): Promise<T> {
-  const anthropic = getClient();
+  const ai = getClient();
 
   const attempt = async (extraNote?: string): Promise<T> => {
-    const content = extraNote
-      ? [...opts.content, { type: "text" as const, text: extraNote }]
-      : opts.content;
+    const parts = extraNote ? [...opts.parts, { text: extraNote }] : opts.parts;
 
-    const response = await anthropic.messages.create({
+    const response = await ai.models.generateContent({
       model: MODEL,
-      max_tokens: opts.maxTokens ?? 4096,
-      system: opts.system,
-      messages: [{ role: "user", content }],
+      contents: [{ role: "user", parts }],
+      config: {
+        systemInstruction: opts.system,
+        responseMimeType: "application/json",
+        maxOutputTokens: opts.maxOutputTokens ?? 4096,
+      },
     });
 
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
+    const text = response.text;
+    if (!text) {
       throw new Error("No text content returned from the model.");
     }
 
-    const jsonText = extractJson(textBlock.text);
+    const jsonText = extractJson(text);
     let parsedRaw: unknown;
     try {
       parsedRaw = JSON.parse(jsonText);
@@ -124,11 +121,11 @@ No prose, no markdown fences — the raw JSON array only.`;
     ? `QUESTION PAPER:\n${input.paperText}\n\n---\n\nMARK SCHEME:\n${input.markSchemeText}`
     : `QUESTION PAPER (no mark scheme provided):\n${input.paperText}`;
 
-  return callClaudeJSON({
+  return callGeminiJSON({
     system,
-    content: [{ type: "text", text: userText }],
+    parts: [{ text: userText }],
     schema: parsedPaperSchema,
-    maxTokens: 8192,
+    maxOutputTokens: 8192,
   });
 }
 
@@ -161,9 +158,8 @@ Respond with STRICT JSON ONLY, an object with exactly these fields:
 
 No prose outside the JSON, no markdown fences.`;
 
-  const content: ContentBlock[] = [
+  const parts: ContentPart[] = [
     {
-      type: "text",
       text: [
         `QUESTION (${input.marksAvailable} marks):\n${input.questionText}`,
         `MARK SCHEME:\n${input.markSchemeText}`,
@@ -181,17 +177,12 @@ No prose outside the JSON, no markdown fences.`;
   ];
 
   if (input.studentAnswerImageBase64) {
-    content.push({
-      type: "image",
-      source: {
-        type: "base64",
-        media_type: "image/png",
-        data: input.studentAnswerImageBase64,
-      },
+    parts.push({
+      inlineData: { mimeType: "image/png", data: input.studentAnswerImageBase64 },
     });
   }
 
-  return callClaudeJSON({ system, content, schema: markingResultSchema });
+  return callGeminiJSON({ system, parts, schema: markingResultSchema });
 }
 
 // ---------------------------------------------------------------------------
@@ -226,9 +217,9 @@ No prose, no markdown fences.`;
 
   const userText = `ORIGINAL QUESTION (topic: ${input.topic ?? "unknown"}, year: ${input.yearRequired ?? "unknown"}):\n${input.originalText}\n\nORIGINAL MARK SCHEME:\n${input.originalMarkScheme}`;
 
-  return callClaudeJSON({
+  return callGeminiJSON({
     system,
-    content: [{ type: "text", text: userText }],
+    parts: [{ text: userText }],
     schema: rewriteSchema,
   });
 }

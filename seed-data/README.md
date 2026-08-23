@@ -67,6 +67,6 @@ redistributing copyrighted exam content.
 npm run seed
 ```
 
-Requires `ANTHROPIC_API_KEY` to be set (paper parsing is an AI call, same
+Requires `GEMINI_API_KEY` to be set (paper parsing is an AI call, same
 as the upload flow). The script is safe to re-run — it clears out existing
 preloaded flashcards/papers first, so it won't duplicate them.

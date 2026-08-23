@@ -133,7 +133,7 @@ async function seedPapers(systemUserId: string) {
   console.log(`Seeded ${created} paper(s).`);
   if (failed.length > 0) {
     console.warn(
-      `\nCouldn't parse ${failed.length} paper(s) (this usually means ANTHROPIC_API_KEY isn't set):`
+      `\nCouldn't parse ${failed.length} paper(s) (this usually means GEMINI_API_KEY isn't set):`
     );
     for (const f of failed) console.warn(`  - ${f}`);
   }
