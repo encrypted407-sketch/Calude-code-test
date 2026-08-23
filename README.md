@@ -13,10 +13,12 @@ general — any subject or exam board can be added via upload.
 - Next.js (App Router) + TypeScript
 - PostgreSQL + Prisma ORM (SQLite for local dev)
 - NextAuth.js (credentials provider)
-- Google Gemini API (`@google/genai`) for paper parsing, marking (including
-  image input for drawn/handwritten answers), and question rewriting — has
-  a free tier, see [ai.google.dev/pricing](https://ai.google.dev/gemini-api/docs/pricing)
-  for current limits
+- Groq API (OpenAI-compatible REST, no SDK) for paper parsing, marking, and
+  question rewriting — free API key, no card required. Text calls use a
+  Llama text model; marking a drawn/handwritten answer (image input) uses
+  a vision-capable Llama model instead. See
+  [console.groq.com/docs/rate-limits](https://console.groq.com/docs/rate-limits)
+  for current free-tier limits
 - Tailwind CSS + Framer Motion
 - HTML5 Canvas (Pointer Events + `perfect-freehand`) for drawn answers
 - KaTeX for equation rendering
@@ -26,14 +28,14 @@ general — any subject or exam board can be added via upload.
 
 ```bash
 npm install
-cp .env.example .env   # then fill in GEMINI_API_KEY at minimum
+cp .env.example .env   # then fill in GROQ_API_KEY at minimum
 npx prisma migrate dev
 npm run seed            # optional: preloaded AQA Maths/Physics content
 npm run dev
 ```
 
-Get a free `GEMINI_API_KEY` at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) —
-no billing required to start, within the free tier's rate limits.
+Get a free `GROQ_API_KEY` at [console.groq.com/keys](https://console.groq.com/keys) — sign
+up with just an email/Google account, no card required.
 
 Open [http://localhost:3000](http://localhost:3000).
 
@@ -44,15 +46,16 @@ Open [http://localhost:3000](http://localhost:3000).
 | `DATABASE_URL` | Prisma connection string (`file:./dev.db` for local SQLite) |
 | `NEXTAUTH_SECRET` | Random secret used to sign session tokens |
 | `NEXTAUTH_URL` | Base URL of the app (`http://localhost:3000` locally) |
-| `GEMINI_API_KEY` | Required for paper parsing, marking, and question rewriting — free at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| `GEMINI_MODEL` | Optional, defaults to `gemini-flash-latest` |
+| `GROQ_API_KEY` | Required for paper parsing, marking, and question rewriting — free at [console.groq.com/keys](https://console.groq.com/keys), no card required |
+| `GROQ_MODEL` | Optional, text model, defaults to `llama-3.3-70b-versatile` |
+| `GROQ_VISION_MODEL` | Optional, used only when marking a drawn/handwritten answer, defaults to `meta-llama/llama-4-scout-17b-16e-instruct` |
 
 ## Project structure
 
 - `src/app/(auth)` — login / register
 - `src/app/(app)` — authenticated app shell: dashboard, papers, flashcards, mock exams, checklist
 - `src/app/(focus)` — distraction-free question/answer sessions
-- `src/lib/ai.ts` — Gemini calls (parse / mark / rewrite), strict JSON with one retry
+- `src/lib/ai.ts` — Groq calls (parse / mark / rewrite), strict JSON with one retry
 - `src/lib/sm2.ts` — flashcard spaced-repetition scheduler
 - `src/lib/mastery.ts`, `src/lib/gamification.ts` — topic mastery, XP, streaks
 - `prisma/schema.prisma` — data model

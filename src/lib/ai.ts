@@ -1,24 +1,25 @@
-import { GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+// Groq's API is OpenAI-compatible (https://console.groq.com/docs/openai) — plain fetch
+// against their REST endpoint, no SDK needed. Text-only calls (parsing, rewriting, and
+// text-only marking) use GROQ_MODEL; marking with a drawn/handwritten image needs a
+// vision-capable model, so those calls use GROQ_VISION_MODEL instead.
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const TEXT_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+const VISION_MODEL = process.env.GROQ_VISION_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct";
 
-let client: GoogleGenAI | null = null;
-
-function getClient() {
-  if (!process.env.GEMINI_API_KEY) {
+function getApiKey() {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) {
     throw new Error(
-      "GEMINI_API_KEY is not set. Add it to your .env file to enable AI features " +
-        "(get a free key at https://aistudio.google.com/apikey)."
+      "GROQ_API_KEY is not set. Add it to your .env file to enable AI features " +
+        "(get a free key at https://console.groq.com/keys)."
     );
   }
-  if (!client) {
-    client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  }
-  return client;
+  return key;
 }
 
-/** Strips ```json fences etc., in case the model wraps its JSON output despite responseMimeType. */
+/** Strips ```json fences etc., in case the model wraps its JSON output despite response_format. */
 function extractJson(raw: string): string {
   const trimmed = raw.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -26,30 +27,51 @@ function extractJson(raw: string): string {
   return trimmed;
 }
 
-type ContentPart = { text: string } | { inlineData: { mimeType: "image/png"; data: string } };
+type UserContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
 
-async function callGeminiJSON<T>(opts: {
+async function callGroqJSON<T>(opts: {
   system: string;
-  parts: ContentPart[];
+  userContent: string | UserContentPart[];
   schema: z.ZodType<T>;
-  maxOutputTokens?: number;
+  model?: string;
+  maxTokens?: number;
 }): Promise<T> {
-  const ai = getClient();
+  const apiKey = getApiKey();
+  const model = opts.model ?? TEXT_MODEL;
 
   const attempt = async (extraNote?: string): Promise<T> => {
-    const parts = extraNote ? [...opts.parts, { text: extraNote }] : opts.parts;
+    const userContent = extraNote
+      ? typeof opts.userContent === "string"
+        ? `${opts.userContent}\n\n${extraNote}`
+        : [...opts.userContent, { type: "text" as const, text: extraNote }]
+      : opts.userContent;
 
-    const response = await ai.models.generateContent({
-      model: MODEL,
-      contents: [{ role: "user", parts }],
-      config: {
-        systemInstruction: opts.system,
-        responseMimeType: "application/json",
-        maxOutputTokens: opts.maxOutputTokens ?? 4096,
+    const res = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
+      body: JSON.stringify({
+        model,
+        max_tokens: opts.maxTokens ?? 4096,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: opts.system },
+          { role: "user", content: userContent },
+        ],
+      }),
     });
 
-    const text = response.text;
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error(`Groq API error (${res.status}): ${errBody || res.statusText}`);
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content;
     if (!text) {
       throw new Error("No text content returned from the model.");
     }
@@ -62,7 +84,17 @@ async function callGeminiJSON<T>(opts: {
       throw new Error("MALFORMED_JSON");
     }
 
-    const result = opts.schema.safeParse(parsedRaw);
+    // Groq's json_object mode requires a JSON *object*, so array responses (paper
+    // parsing) are asked for wrapped as {"questions": [...]}; unwrap before validating.
+    const candidate =
+      !Array.isArray(parsedRaw) &&
+      parsedRaw &&
+      typeof parsedRaw === "object" &&
+      "questions" in parsedRaw
+        ? (parsedRaw as { questions: unknown }).questions
+        : parsedRaw;
+
+    const result = opts.schema.safeParse(candidate);
     if (!result.success) {
       throw new Error("SCHEMA_MISMATCH");
     }
@@ -75,7 +107,7 @@ async function callGeminiJSON<T>(opts: {
     // Retry once, telling the model exactly what went wrong.
     return await attempt(
       "Your previous response was not valid JSON matching the required schema. " +
-        "Reply again with ONLY the raw JSON object/array, no prose, no markdown fences."
+        "Reply again with ONLY the raw JSON, no prose, no markdown fences."
     );
   }
 }
@@ -106,7 +138,7 @@ export async function parsePaperWithAI(input: {
 }): Promise<ParsedQuestion[]> {
   const system = `You are an expert exam-paper parser for ${input.examBoard} ${input.level} ${input.subject}.
 Split a past exam paper into individual questions and match each to its mark scheme entry.
-Respond with STRICT JSON ONLY: an array of objects with exactly these fields:
+Respond with STRICT JSON ONLY: an object of the form {"questions": [...]}, where each array entry has exactly these fields:
 - "number": string, the question number/part as printed (e.g. "3(b)(ii)")
 - "text": string, the full question text
 - "marksAvailable": integer, marks for this question/part
@@ -115,17 +147,17 @@ Respond with STRICT JSON ONLY: an array of objects with exactly these fields:
 - "requiresDrawing": boolean, true if the question asks the student to sketch/plot/draw a graph, diagram, or construction
 - "markSchemeText": string or null, the matching mark scheme text for this question, matched by question number
 
-No prose, no markdown fences — the raw JSON array only.`;
+No prose, no markdown fences — the raw JSON object only.`;
 
   const userText = input.markSchemeText
     ? `QUESTION PAPER:\n${input.paperText}\n\n---\n\nMARK SCHEME:\n${input.markSchemeText}`
     : `QUESTION PAPER (no mark scheme provided):\n${input.paperText}`;
 
-  return callGeminiJSON({
+  return callGroqJSON({
     system,
-    parts: [{ text: userText }],
+    userContent: userText,
     schema: parsedPaperSchema,
-    maxOutputTokens: 8192,
+    maxTokens: 8192,
   });
 }
 
@@ -158,31 +190,36 @@ Respond with STRICT JSON ONLY, an object with exactly these fields:
 
 No prose outside the JSON, no markdown fences.`;
 
-  const parts: ContentPart[] = [
-    {
-      text: [
-        `QUESTION (${input.marksAvailable} marks):\n${input.questionText}`,
-        `MARK SCHEME:\n${input.markSchemeText}`,
-        input.previousFeedback
-          ? `PREVIOUS ATTEMPT FEEDBACK (the student is resubmitting after this):\n${input.previousFeedback}`
-          : null,
-        input.studentAnswerText ? `STUDENT'S WRITTEN ANSWER:\n${input.studentAnswerText}` : null,
-        input.studentAnswerImageBase64
-          ? "STUDENT'S DRAWN/HANDWRITTEN ANSWER: see attached image."
-          : null,
+  const text = [
+    `QUESTION (${input.marksAvailable} marks):\n${input.questionText}`,
+    `MARK SCHEME:\n${input.markSchemeText}`,
+    input.previousFeedback
+      ? `PREVIOUS ATTEMPT FEEDBACK (the student is resubmitting after this):\n${input.previousFeedback}`
+      : null,
+    input.studentAnswerText ? `STUDENT'S WRITTEN ANSWER:\n${input.studentAnswerText}` : null,
+    input.studentAnswerImageBase64
+      ? "STUDENT'S DRAWN/HANDWRITTEN ANSWER: see attached image."
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
+  const userContent: string | UserContentPart[] = input.studentAnswerImageBase64
+    ? [
+        { type: "text", text },
+        {
+          type: "image_url",
+          image_url: { url: `data:image/png;base64,${input.studentAnswerImageBase64}` },
+        },
       ]
-        .filter(Boolean)
-        .join("\n\n"),
-    },
-  ];
+    : text;
 
-  if (input.studentAnswerImageBase64) {
-    parts.push({
-      inlineData: { mimeType: "image/png", data: input.studentAnswerImageBase64 },
-    });
-  }
-
-  return callGeminiJSON({ system, parts, schema: markingResultSchema });
+  return callGroqJSON({
+    system,
+    userContent,
+    schema: markingResultSchema,
+    model: input.studentAnswerImageBase64 ? VISION_MODEL : TEXT_MODEL,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -217,9 +254,9 @@ No prose, no markdown fences.`;
 
   const userText = `ORIGINAL QUESTION (topic: ${input.topic ?? "unknown"}, year: ${input.yearRequired ?? "unknown"}):\n${input.originalText}\n\nORIGINAL MARK SCHEME:\n${input.originalMarkScheme}`;
 
-  return callGeminiJSON({
+  return callGroqJSON({
     system,
-    parts: [{ text: userText }],
+    userContent: userText,
     schema: rewriteSchema,
   });
 }
