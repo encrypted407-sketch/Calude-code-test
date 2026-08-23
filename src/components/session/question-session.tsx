@@ -10,6 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MathText } from "@/components/ui/math-text";
 import { DrawingCanvas, type DrawingCanvasHandle } from "@/components/canvas/drawing-canvas";
 import { FormulaSheetToggle } from "@/components/session/formula-sheet";
+import { LevelUpCelebration } from "@/components/ui/level-up-celebration";
+import { levelForXp } from "@/lib/leveling";
 import { cn } from "@/lib/utils";
 
 interface AttemptView {
@@ -62,6 +64,7 @@ export function QuestionSession({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastXp, setLastXp] = useState<number | null>(null);
+  const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
 
   const latest = attempts[attempts.length - 1] ?? null;
   const previous = attempts.length > 1 ? attempts[attempts.length - 2] : null;
@@ -107,6 +110,9 @@ export function QuestionSession({
         },
       ]);
       setLastXp(data.xpEarned);
+      const previousLevel = levelForXp(data.totalXp - data.xpEarned).level;
+      const newLevel = levelForXp(data.totalXp).level;
+      if (newLevel > previousLevel) setLevelUpTo(newLevel);
       setMode("result");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -131,8 +137,9 @@ export function QuestionSession({
   }
 
   return (
-    <div className="flex flex-col gap-6 py-6">
-      <div>
+    <div className="flex flex-col gap-6 py-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
+      <LevelUpCelebration level={levelUpTo} onDone={() => setLevelUpTo(null)} />
+      <div className="lg:sticky lg:top-6">
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm font-medium text-muted-foreground">
             Question {question.number}

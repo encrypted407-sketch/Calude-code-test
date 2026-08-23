@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
+export { levelForXp } from "@/lib/leveling";
+
 /** XP scales with marks awarded, plus a bonus for improving over the previous attempt. */
 export function computeXp(opts: {
   marksAwarded: number;
@@ -15,19 +17,6 @@ export function computeXp(opts: {
   }
 
   return Math.max(base + accuracyBonus + improvementBonus, opts.marksAwarded > 0 ? 5 : 2);
-}
-
-export function levelForXp(xp: number): { level: number; xpIntoLevel: number; xpForNextLevel: number } {
-  // Each level needs progressively more XP: level n requires 100 * n XP to clear.
-  let level = 1;
-  let remaining = xp;
-  let threshold = 100;
-  while (remaining >= threshold) {
-    remaining -= threshold;
-    level += 1;
-    threshold = 100 * level;
-  }
-  return { level, xpIntoLevel: remaining, xpForNextLevel: threshold };
 }
 
 /** Updates streak/lastActiveDate for a user's first activity of the day. Returns the new streak count. */

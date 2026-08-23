@@ -96,5 +96,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ paperId
   const totalAwarded = results.reduce((s, r) => s + r.marksAwarded, 0);
   const totalAvailable = results.reduce((s, r) => s + r.marksAvailable, 0);
 
-  return NextResponse.json({ results, totalAwarded, totalAvailable, totalXp });
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: session.user.id },
+    select: { xp: true },
+  });
+
+  return NextResponse.json({
+    results,
+    totalAwarded,
+    totalAvailable,
+    totalXp,
+    userTotalXp: user.xp,
+  });
 }

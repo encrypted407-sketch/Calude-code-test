@@ -45,6 +45,7 @@ export default async function SessionPage({
       current={isGenerated ? undefined : questionIndex + 1}
       total={isGenerated ? undefined : paper.questions.length}
       exitHref={isGenerated ? "/revise" : `/papers/${paper.id}`}
+      wide
     >
       <QuestionSession
         paperId={paper.id}

@@ -3,13 +3,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ChevronLeft, ChevronRight, Type, PenLine, Flag, Timer } from "lucide-react";
+import {
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Type,
+  PenLine,
+  Flag,
+  Timer,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { MathText } from "@/components/ui/math-text";
 import { ProgressBar } from "@/components/ui/progress";
 import { DrawingCanvas, type DrawingCanvasHandle } from "@/components/canvas/drawing-canvas";
+import { LevelUpCelebration } from "@/components/ui/level-up-celebration";
+import { levelForXp } from "@/lib/leveling";
 import { cn } from "@/lib/utils";
 
 interface MockQuestion {
@@ -66,7 +77,10 @@ export function MockExamSession({
     results: Result[];
     totalAwarded: number;
     totalAvailable: number;
+    totalXp: number;
+    userTotalXp: number;
   } | null>(null);
+  const [levelUpTo, setLevelUpTo] = useState<number | null>(null);
   const finishedRef = useRef(false);
 
   const question = questions[index];
@@ -104,6 +118,9 @@ export function MockExamSession({
           const data = await res.json();
           if (res.ok) {
             setResults(data);
+            const previousLevel = levelForXp(data.userTotalXp - data.totalXp).level;
+            const newLevel = levelForXp(data.userTotalXp).level;
+            if (newLevel > previousLevel) setLevelUpTo(newLevel);
             setPhase("results");
           }
         } finally {
@@ -145,11 +162,19 @@ export function MockExamSession({
   if (phase === "results" && results) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
+        <LevelUpCelebration level={levelUpTo} onDone={() => setLevelUpTo(null)} />
         <h1 className="text-2xl font-semibold">{title} — results</h1>
-        <p className="mt-1 text-muted-foreground">
-          {results.totalAwarded}/{results.totalAvailable} marks (
-          {Math.round((results.totalAwarded / Math.max(1, results.totalAvailable)) * 100)}%)
-        </p>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <p className="text-muted-foreground">
+            {results.totalAwarded}/{results.totalAvailable} marks (
+            {Math.round((results.totalAwarded / Math.max(1, results.totalAvailable)) * 100)}%)
+          </p>
+          {results.totalXp > 0 && (
+            <span className="flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+              <Sparkles className="h-3.5 w-3.5" />+{results.totalXp} XP
+            </span>
+          )}
+        </div>
         <div className="mt-6 flex flex-col gap-3">
           {results.results.map((r) => (
             <Card key={r.questionId}>
@@ -193,87 +218,93 @@ export function MockExamSession({
       </header>
 
       <main className="flex flex-1 flex-col items-center px-4 pb-16 md:px-8">
-        <div className="w-full max-w-3xl py-6">
-          <p className="text-sm font-medium text-muted-foreground">
-            Question {question.number} · {question.marksAvailable} mark
-            {question.marksAvailable === 1 ? "" : "s"}
-          </p>
-          <div className="mt-2 text-lg leading-relaxed">
-            <MathText text={question.text} />
+        <div className="w-full max-w-5xl py-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-10">
+          <div className="lg:sticky lg:top-6">
+            <p className="text-sm font-medium text-muted-foreground">
+              Question {question.number} · {question.marksAvailable} mark
+              {question.marksAvailable === 1 ? "" : "s"}
+            </p>
+            <div className="mt-2 text-lg leading-relaxed">
+              <MathText text={question.text} />
+            </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-4">
-            <div className="flex gap-1 self-start rounded-lg bg-surface-muted p-1">
-              <button
-                type="button"
-                onClick={() => {
-                  if (answerMode === "drawing") {
-                    const image = canvasRef.current?.exportPng() ?? null;
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [question.id]: { text: prev[question.id]?.text ?? "", image },
-                    }));
-                  }
-                  setAnswerMode("text");
-                }}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                  answerMode === "text" ? "bg-surface text-foreground shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                <Type className="h-4 w-4" /> Write
-              </button>
-              <button
-                type="button"
-                onClick={() => setAnswerMode("drawing")}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                  answerMode === "drawing"
-                    ? "bg-surface text-foreground shadow-sm"
-                    : "text-muted-foreground"
-                )}
-              >
-                <PenLine className="h-4 w-4" /> Draw
-              </button>
+          <div>
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-1 self-start rounded-lg bg-surface-muted p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (answerMode === "drawing") {
+                      const image = canvasRef.current?.exportPng() ?? null;
+                      setAnswers((prev) => ({
+                        ...prev,
+                        [question.id]: { text: prev[question.id]?.text ?? "", image },
+                      }));
+                    }
+                    setAnswerMode("text");
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    answerMode === "text"
+                      ? "bg-surface text-foreground shadow-sm"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  <Type className="h-4 w-4" /> Write
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAnswerMode("drawing")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    answerMode === "drawing"
+                      ? "bg-surface text-foreground shadow-sm"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  <PenLine className="h-4 w-4" /> Draw
+                </button>
+              </div>
+
+              {answerMode === "text" ? (
+                <Textarea
+                  id="mock-answer-text"
+                  key={question.id}
+                  rows={8}
+                  defaultValue={answers[question.id]?.text ?? ""}
+                  placeholder="Write your answer, including working…"
+                />
+              ) : (
+                <DrawingCanvas key={question.id} ref={canvasRef} />
+              )}
             </div>
 
-            {answerMode === "text" ? (
-              <Textarea
-                id="mock-answer-text"
-                key={question.id}
-                rows={8}
-                defaultValue={answers[question.id]?.text ?? ""}
-                placeholder="Write your answer, including working…"
-              />
-            ) : (
-              <DrawingCanvas key={question.id} ref={canvasRef} />
-            )}
-          </div>
-
-          <div className="mt-6 flex items-center justify-between">
-            <Button variant="secondary" onClick={() => goTo(index - 1)} disabled={index === 0}>
-              <ChevronLeft className="h-4 w-4" /> Previous
-            </Button>
-            <span className="text-xs text-muted-foreground">
-              {answeredCount}/{questions.length} answered
-            </span>
-            {index < questions.length - 1 ? (
-              <Button onClick={() => goTo(index + 1)}>
-                Next <ChevronRight className="h-4 w-4" />
+            <div className="mt-6 flex items-center justify-between">
+              <Button variant="secondary" onClick={() => goTo(index - 1)} disabled={index === 0}>
+                <ChevronLeft className="h-4 w-4" /> Previous
               </Button>
-            ) : (
-              <Button onClick={handleFinish} disabled={submitting}>
-                {submitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Marking…
-                  </>
-                ) : (
-                  <>
-                    <Flag className="h-4 w-4" /> Finish exam
-                  </>
-                )}
-              </Button>
-            )}
+              <span className="text-xs text-muted-foreground">
+                {answeredCount}/{questions.length} answered
+              </span>
+              {index < questions.length - 1 ? (
+                <Button onClick={() => goTo(index + 1)}>
+                  Next <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button onClick={handleFinish} disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Marking…
+                    </>
+                  ) : (
+                    <>
+                      <Flag className="h-4 w-4" /> Finish exam
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </main>
