@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
+  // Required outside Vercel (which sets this automatically) — self-hosted/containerized
+  // deployments don't know their public URL in advance, so Auth.js must trust the
+  // incoming Host header rather than strictly matching NEXTAUTH_URL.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
