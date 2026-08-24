@@ -1,0 +1,156 @@
+// Prisma schema for the A-Level Revision App
+// Local dev uses SQLite; swap the datasource to postgresql + DATABASE_URL for production.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String               @id @default(cuid())
+  email             String               @unique
+  password          String
+  name              String?
+  xp                Int                  @default(0)
+  streakCount       Int                  @default(0)
+  lastActiveDate    DateTime?
+  examDates         ExamDate[]
+  papers            Paper[]
+  attempts          Attempt[]
+  mastery           TopicMastery[]
+  flashcards        Flashcard[]
+  flashcardProgress FlashcardProgress[]
+  createdAt         DateTime             @default(now())
+}
+
+model Paper {
+  id                String     @id @default(cuid())
+  userId            String
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject           String
+  examBoard         String
+  level             String // "AS" or "A-Level"
+  title             String
+  year              Int?
+  rawText           String
+  markSchemeRawText String?
+  isPreloaded       Boolean    @default(false)
+  isMock            Boolean    @default(false)
+  mockDurationMins  Int?
+  questions         Question[]
+  createdAt         DateTime   @default(now())
+
+  @@index([userId])
+}
+
+model Question {
+  id                String     @id @default(cuid())
+  paperId           String
+  paper             Paper      @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  number            String
+  text              String
+  marksAvailable    Int
+  topic             String?
+  yearRequired      Int? // 1 = first-year/AS content, 2 = second-year-only content
+  requiresDrawing   Boolean    @default(false)
+  markSchemeText    String?
+  isGenerated       Boolean    @default(false)
+  sourceQuestionId  String?
+  sourceQuestion    Question?  @relation("QuestionRewrites", fields: [sourceQuestionId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rewrites          Question[] @relation("QuestionRewrites")
+  attempts          Attempt[]
+  reviewSchedule     ReviewSchedule?
+
+  @@index([paperId])
+}
+
+model Attempt {
+  id                     String   @id @default(cuid())
+  userId                 String
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId             String
+  question               Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attemptNumber          Int
+  studentAnswerText      String?
+  studentAnswerImageUrl  String?
+  marksAwarded           Int
+  marksAvailable         Int
+  feedback               String
+  improvementPoints      String
+  xpEarned               Int      @default(0)
+  createdAt              DateTime @default(now())
+
+  @@index([userId])
+  @@index([questionId])
+}
+
+model TopicMastery {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject      String
+  topic        String
+  yearRequired Int?
+  strength     Float    @default(0)
+  lastSeen     DateTime @default(now())
+
+  @@unique([userId, subject, topic])
+}
+
+model ReviewSchedule {
+  id            String   @id @default(cuid())
+  questionId    String   @unique
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId        String
+  intervalDays  Int      @default(2)
+  dueDate       DateTime @default(now())
+  timesReviewed Int      @default(0)
+
+  @@index([userId])
+}
+
+model Flashcard {
+  id          String               @id @default(cuid())
+  subject     String
+  examBoard   String
+  topic       String?
+  category    String // "equation" | "definition"
+  front       String
+  back        String
+  isPreloaded Boolean              @default(false)
+  createdById String?
+  createdBy   User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  progress    FlashcardProgress[]
+
+  @@index([subject, examBoard])
+}
+
+model FlashcardProgress {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcardId  String
+  flashcard    Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  easeFactor   Float     @default(2.5)
+  intervalDays Int       @default(0)
+  repetitions  Int       @default(0)
+  dueDate      DateTime  @default(now())
+
+  @@unique([userId, flashcardId])
+}
+
+model ExamDate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   String
+  examBoard String
+  date      DateTime
+  label     String?
+
+  @@index([userId])
+}
